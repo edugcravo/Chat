@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+   <head>
+      <meta charset="UTF-8">
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>WebChat Vue</title>
+   </head>
+   <body>
+
+      <h1>WebChat with Vue.js</h1>
+
+      <div id="app">
+          
+         <div v-if="logado == 0">
+            <h2>Olá, digite seu nome de usuário: </h2>
+            <form @submit.prevent="setaNomeUsuario" class="formulario">
+               <input type="text" placeholder="Seu usuário" v-model:value="usuario">
+               <input type="submit" value="Entrar">
+            </form>
+         </div>
+
+         <div v-if="logado == 1">
+            <div v-for="usuario in usuarios">
+               <form @submit.prevent="conversarCom" class="formulario">
+                  <button type="submit"><input type="hidden" v-model:value="usuario">{{ usuario }}</button>
+               </form>
+            </div>
+            
+         </div>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+         var socket = null;
+         var app = new Vue({
+                el: '#app',
+                data: {
+                mensagem: '',
+                mensagens: [],
+                usuario: '',
+                usuarios: [],
+                logado: 0,
+                state: 0,
+            },
+            methods: {
+                enviarMensagem: function () {
+                socket.emit('mensagem', this.mensagem);
+                this.mensagem = '';
+            },
+            setaNomeUsuario: function() {
+                socket.emit('join', this.usuario);
+                this.logado = 1;
+            },  
+            conversarCom: function (destinatario) {
+               console.log(destinatario)
+               socket.emit('jointo', destinatario, this.usuarios)
+               this.state = 1;
+            },
+            },
+            created: function () {
+               socket = io();
+            }, 
+            mounted: function () {
+                socket.on('mensagem', function (mensagem){ //amontoando mensagens
+                    app.mensagens.push(mensagem)
+                    app.$nextTick(function () {
+                        var messageBox = document.getElementById('chatbox');
+                        messageBox.scrollTop = messageBox.scrollHeight;
+                    })
+                })
+
+                socket.on('users', function (usuarios){
+                   app.usuarios.push(usuarios)
+                })
+            }
+        }); 
+      </script>   
+   </body>
+</html>
